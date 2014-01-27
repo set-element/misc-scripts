@@ -60,7 +60,7 @@ event ntp_message(c: connection, msg: ntp_msg, excess: string)
 	# we are handed a ntp_msg type which is slightly different than the
 	#  ntp_record used for dealing with the policy side of things.
 
-	if ( log_only_control && ( msg$code != NTP_CONTROL ) )
+	if ( log_only_control && ((msg$code != NTP_CONTROL) || (msg$code != NTP_PRIVATE)) )
 		return;
 
 	local t_rec: ntp_record;
