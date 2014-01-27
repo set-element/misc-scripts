@@ -94,7 +94,7 @@ event ntp_message(c: connection, msg: ntp_msg, excess: string)
 
 	t_rec$excess = excess;
 
-	if ((msg$code == NTP_PRIVATE) || if (msg$code == NTP_CONTROL)) {
+	if ((msg$code == NTP_PRIVATE) || (msg$code == NTP_CONTROL)) {
 
 		if ( c$id$orig_h !in ntp_host ) {
 
