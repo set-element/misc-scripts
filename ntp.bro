@@ -5,6 +5,7 @@ export {
 
 	redef enum Notice::Type += {
 		NTP_Alarm,
+		NTP_Monlist_Queries,
 		};
 
 	type ntp_record: record {
@@ -52,6 +53,9 @@ export {
 
 	const log_only_control: bool = F &redef;
 
+	# So we don't warn more than one time
+	global ntp_host: table[addr] of count;
+
 	} # end export
 
 
@@ -89,6 +93,21 @@ event ntp_message(c: connection, msg: ntp_msg, excess: string)
 		t_rec$reftime = msg$ref_t;
 
 	t_rec$excess = excess;
+
+	if ((msg$code == NTP_PRIVATE) || if (msg$code == NTP_CONTROL)) {
+
+		if ( c$id$orig_h !in ntp_host ) {
+
+			NOTICE([$note=NTP::NTP_Monlist_Queries,
+				$conn=c,
+				$suppress_for=6hrs,
+				$msg=fmt("NTP monlist queries"),
+				$identifier=cat(c$id$orig_h)]);
+			}
+		else
+			++ntp_host[c$id$orig_h];
+
+		}
 
 	Log::write(LOG, t_rec);
 	}
