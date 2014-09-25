@@ -24,10 +24,8 @@ export {
 
 event http_header(c: connection, is_orig: bool, name: string, value: string) &priority=3
 	{
-	if ( ! is_orig || ! c?$http )
-		return;
 	
-	if ( test_client_header_names )
+	if ( is_orig && test_client_header_names )
 		{
 			if ( header_pattern in value ) {
 
@@ -38,7 +36,7 @@ event http_header(c: connection, is_orig: bool, name: string, value: string) &pr
 
 		}
 		
-	if ( test_server_header_names )
+	if ( is_resp && test_server_header_names )
 		{
 			if ( header_pattern in value ) {
 
