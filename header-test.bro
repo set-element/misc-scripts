@@ -20,6 +20,10 @@ export {
 	##  http-header = Host:() { :; }; ping
 	##
 	const header_pattern = /.*\(.*\).*\{.*\:.*\;.*\}/ &redef;
+
+	## Some header fields just have too much junk in them...
+	const header_whitelist = /COOKIE/ &redef;
+
 }
 
 event http_header(c: connection, is_orig: bool, name: string, value: string) &priority=3
@@ -27,7 +31,7 @@ event http_header(c: connection, is_orig: bool, name: string, value: string) &pr
 	
 	if ( is_orig && test_client_header_names )
 		{
-			if ( header_pattern in value ) {
+			if ( header_pattern in value && header_whitelist !in name ) {
 
 				NOTICE([$note=HTTP_Suspicous_Client_Header,
 					$conn = c,
@@ -38,7 +42,7 @@ event http_header(c: connection, is_orig: bool, name: string, value: string) &pr
 		
 	if ( !is_orig && test_server_header_names )
 		{
-			if ( header_pattern in value ) {
+			if ( header_pattern in value && header_whitelist !in name ) {
 
 				NOTICE([$note=HTTP_Suspicous_Server_Header,
 					$conn = c,
