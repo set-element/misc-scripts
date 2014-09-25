@@ -14,7 +14,7 @@ export {
 	const test_client_header_names = T &redef;
 	
 	## A boolean value to determine if server header names are to be logged.
-	const test_server_header_names = F &redef;
+	const test_server_header_names = T &redef;
 
 	## Looking for the general form:
 	##  http-header = Host:() { :; }; ping
@@ -36,7 +36,7 @@ event http_header(c: connection, is_orig: bool, name: string, value: string) &pr
 
 		}
 		
-	if ( is_resp && test_server_header_names )
+	if ( !is_orig && test_server_header_names )
 		{
 			if ( header_pattern in value ) {
 
