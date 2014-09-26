@@ -6,8 +6,8 @@ module HTTP;
 
 export {
 	redef enum Notice::Type += {
-		HTTP_Suspicous_Client_Header,
-		HTTP_Suspicous_Server_Header,
+		HTTP_Suspicious_Client_Header,
+		HTTP_Suspicious_Server_Header,
 		};
 
 	## A boolean value to determine if client header names are to be tested
@@ -33,7 +33,7 @@ event http_header(c: connection, is_orig: bool, name: string, value: string) &pr
 		{
 			if ( header_pattern in value && header_whitelist !in name ) {
 
-				NOTICE([$note=HTTP_Suspicous_Client_Header,
+				NOTICE([$note=HTTP_Suspicious_Client_Header,
 					$conn = c,
 					$msg = fmt("%s : %s", name, value)]);
 				}
@@ -44,7 +44,7 @@ event http_header(c: connection, is_orig: bool, name: string, value: string) &pr
 		{
 			if ( header_pattern in value && header_whitelist !in name ) {
 
-				NOTICE([$note=HTTP_Suspicous_Server_Header,
+				NOTICE([$note=HTTP_Suspicious_Server_Header,
 					$conn = c,
 					$msg = fmt("%s : %s", name, value)]);
 				}
