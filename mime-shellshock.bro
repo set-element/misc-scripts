@@ -1,4 +1,8 @@
-
+# Scott Campbell
+# test SMTP and POP headers for "shellshock" related patterns now that 
+#  an exploit has been released.
+#
+module MIME_SHELL;
 
 export {
 
@@ -6,20 +10,21 @@ export {
 		MIME_Header_ShellShock,
 		};
 
+	# pattern lifted from HTTP detector...
 	const shell_pattern /.*(\(|%28)(\)|%29)( |%20)(\{|%7B)/ ;
 
 }
 # end export 
 
-# global mime_all_headers: event(c: connection , hlist: mime_header_list );
+# Related data structs:
 #
-# note that hlist looke like: 
+# hlist looke like: 
 #  type mime_header_list: table[count] of mime_header_rec;
 # 
-# type mime_header_rec: record {
-#        name: string;   ##< The header name.
-#        value: string;  ##< The header value.
-# 	};
+#  type mime_header_rec: record {
+#         name: string;   ##< The header name.
+#         value: string;  ##< The header value.
+#     	  };
 #
 #
 
