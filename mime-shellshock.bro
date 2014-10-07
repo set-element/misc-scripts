@@ -27,10 +27,10 @@ event mime_all_headers(c: connection, hlist: mime_header_list )
 	{
 	# run through the set of provided headers and look for suspicous values
 	for ( h in hlist ) {
-		if ( shell_pattern in h$value ) {
+		if ( shell_pattern in hlist[h]$value ) {
 
 			NOTICE([$note=MIME_Header_ShellShock, $conn = c,
-				$msg=fmt("MIME header: %s : %s", h$name, h$value)]);
+				$msg=fmt("MIME header: %s : %s", hlist[h]$name, hlist[h]$value)]);
 
 
 			} # end pattern match
