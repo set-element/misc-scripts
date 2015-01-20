@@ -80,15 +80,15 @@ function software_log(w: wp_ent)
 	{
 	# This will get called in the event that we are reporting the wordpress core and when
 	#   looking at plugins
-	local si: Software::Info;
 	local ts = network_time();
 
-	si$ts = ts;
-	si$host = w$cid$orig_h;
-	si$host_p = w$cid$orig_p;
-
-	if ( w$plugin == "NULL" ) {
+	if ( w$plugin != "NULL" ) {
 		# This is a plugin report
+		local si: Software::Info;
+		si$ts = ts;
+		si$host = w$cid$orig_h;
+		si$host_p = w$cid$orig_p;
+		si$force_log = T;
 		si$software_type = WEB_WORDPRESS_PLUGIN;
 		si$name = w$plugin;
 		si$version = get_version(w$plugin_ver);
@@ -98,23 +98,38 @@ function software_log(w: wp_ent)
 		}
 	else {
 		# kinda unclean ...
-		si$software_type = WEB_WORDPRESS_CORE;
-		si$name = "Wordpress"
-		si$version = get_version(w$wp_version);
-		si$unparsed_version = w$wp_version;
-		Software::found(w$cid, si);
+		local si1: Software::Info;
+		si1$ts = ts;
+		si1$host = w$cid$orig_h;
+		si1$host_p = w$cid$orig_p;
+		si1$force_log = T;
+		si1$software_type = WEB_WORDPRESS_CORE;
+		si1$name = "Wordpress";
+		si1$version = get_version(w$wp_version);
+		si1$unparsed_version = w$wp_version;
+		Software::found(w$cid, si1);
 
-		si$software_type = WEB_WORDPRESS_APP;
-		si$name = "WP_PHP"
-		si$version = get_version(w$php_version);
-		si$unparsed_version = w$php_version;
-		Software::found(w$cid, si);
+		local si2: Software::Info;
+		si2$ts = ts;
+		si2$host = w$cid$orig_h;
+		si2$host_p = w$cid$orig_p;
+		si2$force_log = T;
+		si2$software_type = WEB_WORDPRESS_APP;
+		si2$name = "WP_PHP";
+		si2$version = get_version(w$php_version);
+		si2$unparsed_version = w$php_version;
+		Software::found(w$cid, si2);
 
-		si$software_type = WEB_WORDPRESS_APP;
-		si$name = "WP_MySQL"
-		si$version = get_version(w$mysql_version);
-		si$unparsed_version = w$mysql_version;
-		Software::found(w$cid, si);
+		local si3: Software::Info;
+		si3$ts = ts;
+		si3$host = w$cid$orig_h;
+		si3$host_p = w$cid$orig_p;
+		si3$force_log = T;
+		si3$software_type = WEB_WORDPRESS_APP;
+		si3$name = "WP_MySQL";
+		si3$version = get_version(w$sql_version);
+		si3$unparsed_version = w$sql_version;
+		Software::found(w$cid, si3);
 		}
 	
 	}
@@ -283,7 +298,7 @@ event http_end_entity(c: connection , is_orig: bool )
 				}
 
 			if ( (nret_value != "X") && (vret_value != "X")) {
-				print fmt("%s %s", nret_value, vret_value);
+				#print fmt("%s %s", nret_value, vret_value);
 				Log::write(LOG, twe);
 				software_log(twe);
 				nret_value = "X";
