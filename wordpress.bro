@@ -3,10 +3,19 @@
 #   to the mother ship...
 #
 
+@load base/frameworks/software
+
 module WP_PARSE;
 
 export {
 	redef enum Log::ID += { LOG };
+
+        redef enum Software::Type += {
+                ## Identifier for web applications in the software framework.
+                WEB_WORDPRESS_APP, 		# support app like MySQL
+                WEB_WORDPRESS_CORE, 		# core wordpress version
+                WEB_WORDPRESS_PLUGIN, 		# plugin info
+        };
 
 	redef enum Notice::Type += {
 		WP_Value,
@@ -28,7 +37,8 @@ export {
 	#
 	# longer term is indexed by the site name and holds long term data
 	#
-	type t_wp_ent: record {
+	type wp_ent: record {
+		cid: conn_id;
 		uid: string &default="UID" &log;
 		name: string &default="NAME" &log;	
 		wp_version: string &default="WPVERSION" &log;
@@ -39,12 +49,76 @@ export {
 		users: string &default="0" &log;
 		data: string &default="";
 		plugin: string &default="NULL" &log;
-		plug_ver: string &default="NULL" &log;
+		plugin_ver: string &default="NULL" &log;
 		};
 
-	global t_wp: table[conn_id] of t_wp_ent;
+	global t_wp: table[conn_id] of wp_ent;
 
 	}
+
+function get_version(rawv: string) : Software::Version
+	{
+	local sv: Software::Version;
+	local ver = split(rawv, /\./);
+
+	if ( |ver| > 1 ) {
+
+		if ( |ver| > 3 )
+			sv$minor3 = to_count(ver[4]);
+
+		if ( |ver| > 2 )
+			sv$minor2 = to_count(ver[3]);
+
+		sv$minor = to_count(ver[2]);
+		sv$major = to_count(ver[1]);
+		}
+
+	return sv;
+	}
+
+function software_log(w: wp_ent)
+	{
+	# This will get called in the event that we are reporting the wordpress core and when
+	#   looking at plugins
+	local si: Software::Info;
+	local ts = network_time();
+
+	si$ts = ts;
+	si$host = w$cid$orig_h;
+	si$host_p = w$cid$orig_p;
+
+	if ( w$plugin == "NULL" ) {
+		# This is a plugin report
+		si$software_type = WEB_WORDPRESS_PLUGIN;
+		si$name = w$plugin;
+		si$version = get_version(w$plugin_ver);
+		si$unparsed_version = w$plugin_ver;
+
+		Software::found(w$cid, si);
+		}
+	else {
+		# kinda unclean ...
+		si$software_type = WEB_WORDPRESS_CORE;
+		si$name = "Wordpress"
+		si$version = get_version(w$wp_version);
+		si$unparsed_version = w$wp_version;
+		Software::found(w$cid, si);
+
+		si$software_type = WEB_WORDPRESS_APP;
+		si$name = "WP_PHP"
+		si$version = get_version(w$php_version);
+		si$unparsed_version = w$php_version;
+		Software::found(w$cid, si);
+
+		si$software_type = WEB_WORDPRESS_APP;
+		si$name = "WP_MySQL"
+		si$version = get_version(w$mysql_version);
+		si$unparsed_version = w$mysql_version;
+		Software::found(w$cid, si);
+		}
+	
+	}
+
 
 function clean_string(s: string) : string
 	{
@@ -66,7 +140,7 @@ event http_request(c: connection, method: string, original_URI: string, unescape
         	if ( method == "GET" && /\/version-check\// in unescaped_URI )
     		{
 		# do some quick parsing
-		local twe: t_wp_ent;
+		local twe: wp_ent;
 		local _uri = split(unescaped_URI, /\&|\?/);
 		local ui: count;
 
@@ -112,6 +186,8 @@ event http_request(c: connection, method: string, original_URI: string, unescape
 		if ( twe$uid == "UID" )
 			twe$uid = c$uid;
 
+		twe$cid = c$id;
+
 		#Log::write(LOG, twe);
 	
 		t_wp[c$id] = twe;
@@ -128,7 +204,8 @@ event http_header(c: connection, is_orig: bool, name: string, value: string) &pr
 		{
 		if ( ua_header in name ) {
 			local domain = split(value, /\ /)[2];
-			local twe: t_wp_ent;
+			local twe: wp_ent;
+			local si: Software::Info;
 
 			# Pull this stunt since there are a number of connections
 			#   involved beyond the initial.  The new twe struct is more 
@@ -137,12 +214,13 @@ event http_header(c: connection, is_orig: bool, name: string, value: string) &pr
 			if ( c$id !in t_wp ) {
 				twe$name = domain;
 				twe$uid = c$uid;
+				twe$cid = c$id;
 				}
 			else {
 				twe = t_wp[c$id];
 				twe$name = domain;
 				Log::write(LOG, twe);
-				#print fmt("%s", twe);
+				software_log(twe);
 				}
 
 			t_wp[c$id] = twe;
@@ -157,7 +235,7 @@ event http_entity_data(c: connection, is_orig: bool, length: count, data: string
 	# If the connection is in the list of known collectors, track the 
 	#   data 
     if (is_orig && c$id in t_wp) {
-	local twe: t_wp_ent;
+	local twe: wp_ent;
 	twe = t_wp[c$id];
 
 	# append new data on old
@@ -175,9 +253,10 @@ event http_end_entity(c: connection , is_orig: bool )
 	#   complex or performance suffers.
 	if ( c$id in t_wp ){ 
 
-		local twe: t_wp_ent;
+		local twe: wp_ent;
 		twe = t_wp[c$id];
 
+		local si: Software::Info;
 		local array = split( unescape_URI(twe$data), /;/);
 		local v_array: vector of string;
 
@@ -200,12 +279,13 @@ event http_end_entity(c: connection , is_orig: bool )
 			if ( wp_plugin_version in val ) {
 				local vvalue = clean_string(v_array[x+1]);
 				vret_value = split1( vvalue, / /)[1];
-				twe$plug_ver = vret_value;
+				twe$plugin_ver = vret_value;
 				}
 
 			if ( (nret_value != "X") && (vret_value != "X")) {
 				print fmt("%s %s", nret_value, vret_value);
 				Log::write(LOG, twe);
+				software_log(twe);
 				nret_value = "X";
 				vret_value = "X";
 				}
@@ -216,5 +296,5 @@ event http_end_entity(c: connection , is_orig: bool )
 
 event bro_init() &priority=5
 	{
-	Log::create_stream(WP_PARSE::LOG, [$columns=t_wp_ent]);
+	Log::create_stream(WP_PARSE::LOG, [$columns=wp_ent]);
 	}
