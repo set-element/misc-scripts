@@ -88,7 +88,6 @@ function software_log(w: wp_ent)
 		si$ts = ts;
 		si$host = w$cid$orig_h;
 		si$host_p = w$cid$orig_p;
-		si$force_log = T;
 		si$software_type = WEB_WORDPRESS_PLUGIN;
 		si$name = w$plugin;
 		si$version = get_version(w$plugin_ver);
@@ -102,7 +101,6 @@ function software_log(w: wp_ent)
 		si1$ts = ts;
 		si1$host = w$cid$orig_h;
 		si1$host_p = w$cid$orig_p;
-		si1$force_log = T;
 		si1$software_type = WEB_WORDPRESS_CORE;
 		si1$name = "Wordpress";
 		si1$version = get_version(w$wp_version);
@@ -113,7 +111,6 @@ function software_log(w: wp_ent)
 		si2$ts = ts;
 		si2$host = w$cid$orig_h;
 		si2$host_p = w$cid$orig_p;
-		si2$force_log = T;
 		si2$software_type = WEB_WORDPRESS_APP;
 		si2$name = "WP_PHP";
 		si2$version = get_version(w$php_version);
@@ -124,7 +121,6 @@ function software_log(w: wp_ent)
 		si3$ts = ts;
 		si3$host = w$cid$orig_h;
 		si3$host_p = w$cid$orig_p;
-		si3$force_log = T;
 		si3$software_type = WEB_WORDPRESS_APP;
 		si3$name = "WP_MySQL";
 		si3$version = get_version(w$sql_version);
