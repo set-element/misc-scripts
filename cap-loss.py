@@ -70,18 +70,22 @@ for x_host in host_set:
             retVal = CSI+"30;40m" + u"\u2588" + CSI + "0m"
 
         if test_val < highThresh:
+            # purple
             retVal = CSI+"35;40m" + u"\u2588" + CSI + "0m"
 
         if test_val < medThresh:
+            # yellow
             retVal = CSI+"33;40m" + u"\u2588" + CSI + "0m"
 
         if test_val < lowThresh:
+            # green
             retVal = CSI+"32;40m" + u"\u2588" + CSI + "0m"
 
         if test_val >= highThresh:
+            # red
             retVal = CSI+"31;40m" + u"\u2588" + CSI + "0m"
 
-        print retVal,
+        print retVal.encode('utf-8'),
 
     print
 
