@@ -3,6 +3,9 @@
 #   to the mother ship...
 #
 
+# original source:
+# https://raw.githubusercontent.com/set-element/misc-scripts/master/wordpress.bro
+
 @load base/frameworks/software
 
 module WP_PARSE;
@@ -59,18 +62,18 @@ export {
 function get_version(rawv: string) : Software::Version
 	{
 	local sv: Software::Version;
-	local ver = split(rawv, /\./);
+	local ver = split_string(rawv, /\./);
 
 	if ( |ver| > 1 ) {
 
 		if ( |ver| > 3 )
-			sv$minor3 = to_count(ver[4]);
+			sv$minor3 = to_count(ver[3]);
 
 		if ( |ver| > 2 )
-			sv$minor2 = to_count(ver[3]);
+			sv$minor2 = to_count(ver[2]);
 
-		sv$minor = to_count(ver[2]);
-		sv$major = to_count(ver[1]);
+		sv$minor = to_count(ver[1]);
+		sv$major = to_count(ver[0]);
 		}
 
 	return sv;
@@ -134,8 +137,8 @@ function software_log(w: wp_ent)
 function clean_string(s: string) : string
 	{
 	# take a string that looks like /a:11:{s:4:"Name"/ and return /Name/
-	local t_s = split(s, /\"/);
-	return t_s[2];
+	local t_s = split_string(s, /\"/);
+	return t_s[1];
 	}
 
 event http_request(c: connection, method: string, original_URI: string, unescaped_URI: string, version: string) &priority=3
@@ -152,8 +155,7 @@ event http_request(c: connection, method: string, original_URI: string, unescape
     		{
 		# do some quick parsing
 		local twe: wp_ent;
-		local _uri = split(unescaped_URI, /\&|\?/);
-		local ui: count;
+		local _uri = split_string(unescaped_URI, /\&|\?/);
 
 		if ( c$id !in t_wp ) {
 			#print fmt("register %s", c$id);
@@ -161,35 +163,35 @@ event http_request(c: connection, method: string, original_URI: string, unescape
 			}
 
 		for (ui in _uri) {
-			local kv = split(_uri[ui], /=/);
+			local kv = split_string(_uri[ui], /=/);
 
-			if ( kv[1] == "version" ) {
-				twe$wp_version = kv[2];
+			if ( kv[0] == "version" ) {
+				twe$wp_version = kv[1];
 				#print fmt("VER: %s  %s", kv[2], twe);
 				}
 
-			if ( kv[1] == "mysql" ) {
-				twe$sql_version = kv[2];
+			if ( kv[0] == "mysql" ) {
+				twe$sql_version = kv[1];
 				#print fmt("MSQ: %s  %s", kv[2], twe);
 				}
 
-			if ( kv[1] == "php" ) {
-				twe$php_version = kv[2];
+			if ( kv[0] == "php" ) {
+				twe$php_version = kv[1];
 				#print fmt("PHP: %s  %s", kv[2], twe);
 				}
 
-			if ( kv[1] == "blogs" ) {
-				twe$blog_count = kv[2];
+			if ( kv[0] == "blogs" ) {
+				twe$blog_count = kv[1];
 				#print fmt("BLG: %s  %s", kv[2], twe);
 				}
 
-			if ( kv[1] == "multisite_enabled" ) {
-				twe$multisite = kv[2];
+			if ( kv[0] == "multisite_enabled" ) {
+				twe$multisite = kv[1];
 				#print fmt("MSE: %s  %s", kv[2], twe);
 				}
 
-			if ( kv[1] == "users" ) {
-				twe$users = kv[2];
+			if ( kv[0] == "users" ) {
+				twe$users = kv[1];
 				#print fmt("MSE: %s  %s", kv[2], twe);
 				}
         		}
@@ -214,7 +216,7 @@ event http_header(c: connection, is_orig: bool, name: string, value: string) &pr
 	if ( (is_orig) && ( c$id$resp_h in wp_api_hosts ) )
 		{
 		if ( ua_header in name ) {
-			local domain = split(value, /\ /)[2];
+			local domain = split_string(value, /\ /)[1];
 			local twe: wp_ent;
 			local si: Software::Info;
 
@@ -268,12 +270,7 @@ event http_end_entity(c: connection , is_orig: bool )
 		twe = t_wp[c$id];
 
 		local si: Software::Info;
-		local array = split( unescape_URI(twe$data), /;/);
-		local v_array: vector of string;
-
-		# we do this to keep the numerical order of the split
-		for ( i in array )
-			v_array[i] = array[i];
+		local v_array = split_string( unescape_URI(twe$data), /;/);
 
 		delete t_wp[c$id];
 		local nret_value = "X";
@@ -284,12 +281,12 @@ event http_end_entity(c: connection , is_orig: bool )
 
 			if ( wp_plugin_name in val ) {
 				local nvalue = clean_string(v_array[x+1]);
-				nret_value = split1( nvalue, / /)[1];
+				nret_value = split_string1( nvalue, / /)[0];
 				twe$plugin = nret_value;
 				}
 			if ( wp_plugin_version in val ) {
 				local vvalue = clean_string(v_array[x+1]);
-				vret_value = split1( vvalue, / /)[1];
+				vret_value = split_string1( vvalue, / /)[0];
 				twe$plugin_ver = vret_value;
 				}
 
